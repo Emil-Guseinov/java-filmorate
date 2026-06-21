@@ -16,7 +16,7 @@ import java.util.Map;
 @RequestMapping("/films")
 public class FilmController {
     private final Map<Long, Film> films = new HashMap<>();
-    private final LocalDate FILM_BIRTHDAY = LocalDate.of(1895, 12, 28);
+    private final static LocalDate FILM_BIRTHDAY = LocalDate.of(1895, 12, 28);
     private static final Logger log = LoggerFactory.getLogger(FilmController.class);
 
     @GetMapping
