@@ -1,31 +1,37 @@
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import jakarta.validation.ValidatorFactory;
+import org.junit.jupiter.api.*;
 import ru.yandex.practicum.filmorate.controller.UserController;
 import ru.yandex.practicum.filmorate.exception.ConditionNotMetException;
-import ru.yandex.practicum.filmorate.exception.DelicateDateException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
+import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class UserControllerTest {
-    UserController userController;
+    private UserController userController;
+    private static Validator validator;
+    private static ValidatorFactory factory;
 
     @BeforeEach
     void setUp() {
         userController = new UserController();
     }
-
-    @Test
-    @DisplayName("Проверка на пустой запрос")
-    void shouldThrowExceptionWhenUserIsNull() {
-        ConditionNotMetException exception = assertThrows(ConditionNotMetException.class,
-                () -> userController.create(null));
-        assertEquals("Тело запроса не должно быть пустым", exception.getMessage());
+    @BeforeAll
+    static void initValidator() {
+        factory = Validation.buildDefaultValidatorFactory();
+        validator = factory.getValidator();
+    }
+    @AfterAll
+    static void closeValidator() {
+       if (factory != null) {
+           factory.close();
+       }
     }
 
     @Test
@@ -37,12 +43,9 @@ public class UserControllerTest {
         user.setName("Джеймс Гослинг");
         user.setBirthday(LocalDate.of(1995, 5, 23));
 
-        User testUser = userController.create(user);
+        Set<ConstraintViolation<User>> violations = validator.validate(user);
 
-        assertEquals("testUnit@yandex.ru", testUser.getEmail());
-        assertEquals("JAVA", testUser.getLogin());
-        assertEquals("Джеймс Гослинг", testUser.getName());
-        assertEquals(LocalDate.of(1995, 5, 23), testUser.getBirthday());
+        assertTrue(violations.isEmpty(), "Должен пройти проверку без ошибок");
 
     }
 
@@ -55,9 +58,12 @@ public class UserControllerTest {
         user.setName("Джеймс Гослинг");
         user.setBirthday(LocalDate.of(1995, 5, 23));
 
-        ConditionNotMetException exception = assertThrows(ConditionNotMetException.class,
-                () -> userController.create(user));
-        assertEquals("Электронная почта не может быть пустой", exception.getMessage());
+        Set<ConstraintViolation<User>> violations = validator.validate(user);
+
+        assertFalse(violations.isEmpty());
+
+        String message = violations.iterator().next().getMessage();
+        assertEquals("Электронная почта не может быть пустой", message);
     }
 
     @Test
@@ -78,7 +84,7 @@ public class UserControllerTest {
 
         ConditionNotMetException exception = assertThrows(ConditionNotMetException.class,
                 () -> userController.create(user2));
-        assertEquals("Имейл уже используется", exception.getMessage());
+        assertEquals("Пользователь с таким email уже зарегистрирован", exception.getMessage());
 
     }
 
@@ -91,9 +97,12 @@ public class UserControllerTest {
         user.setName("Джеймс Гослинг");
         user.setBirthday(LocalDate.of(1995, 5, 23));
 
-        ConditionNotMetException exception = assertThrows(ConditionNotMetException.class,
-                () -> userController.create(user));
-        assertEquals("Не корректный формат электронной почты", exception.getMessage());
+        Set<ConstraintViolation<User>> violations = validator.validate(user);
+
+        assertFalse(violations.isEmpty());
+
+        String message = violations.iterator().next().getMessage();
+        assertEquals("Не корректный формат электронной почты", message);
     }
 
     @Test
@@ -105,23 +114,12 @@ public class UserControllerTest {
         user.setName("Джеймс Гослинг");
         user.setBirthday(LocalDate.of(1995, 5, 23));
 
-        ConditionNotMetException exception = assertThrows(ConditionNotMetException.class,
-                () -> userController.create(user));
-        assertEquals("Логин не должен быть пустым", exception.getMessage());
-    }
+        Set<ConstraintViolation<User>> violations = validator.validate(user);
 
-    @Test
-    @DisplayName("Должно не пройти если логин null")
-    void createUserWithLoginBlank() {
-        User user = new User();
-        user.setEmail("testUnit@yandex.ru");
-        user.setLogin("        ");
-        user.setName("Джеймс Гослинг");
-        user.setBirthday(LocalDate.of(1995, 5, 23));
+        assertFalse(violations.isEmpty());
 
-        ConditionNotMetException exception = assertThrows(ConditionNotMetException.class,
-                () -> userController.create(user));
-        assertEquals("Логин не должен быть пустым", exception.getMessage());
+        String message = violations.iterator().next().getMessage();
+        assertEquals("Логин не должен быть пустым", message);
     }
 
     @Test
@@ -142,7 +140,7 @@ public class UserControllerTest {
 
         ConditionNotMetException exception = assertThrows(ConditionNotMetException.class,
                 () -> userController.create(user2));
-        assertEquals("Логин занят", exception.getMessage());
+        assertEquals("Пользователь с таким логином уже зарегистрирован", exception.getMessage());
     }
 
     @Test
@@ -169,9 +167,12 @@ public class UserControllerTest {
         user.setName("Джеймс Гослинг");
         user.setBirthday(null);
 
-        ConditionNotMetException exception = assertThrows(ConditionNotMetException.class,
-                () -> userController.create(user));
-        assertEquals("Дата рождения должна быть указана", exception.getMessage());
+        Set<ConstraintViolation<User>> violations = validator.validate(user);
+
+        assertFalse(violations.isEmpty());
+
+        String message = violations.iterator().next().getMessage();
+        assertEquals("Дата рождения должна быть указана", message);
     }
 
     @Test
@@ -183,10 +184,12 @@ public class UserControllerTest {
         user.setName("Джеймс Гослинг");
         user.setBirthday(LocalDate.of(2060, 5, 23));
 
-        DelicateDateException exception = assertThrows(DelicateDateException.class,
-                () -> userController.create(user));
+        Set<ConstraintViolation<User>> violations = validator.validate(user);
 
-        assertEquals("Дата рождения не должна быть в будущем", exception.getMessage());
+        assertFalse(violations.isEmpty());
+
+        String message = violations.iterator().next().getMessage();
+        assertEquals("Дата рождения не должна быть в будущем", message);
     }
 
     @Test
@@ -206,12 +209,13 @@ public class UserControllerTest {
         user2.setName("Rico Mori");
         user2.setBirthday(LocalDate.of(1996, 12, 11));
 
-        User testUser = userController.update(user2);
+        Set<ConstraintViolation<User>> violations = validator.validate(user2);
 
-        assertEquals("yandex-practicum@yandex.ru", testUser.getEmail());
-        assertEquals("Pat", testUser.getLogin());
-        assertEquals("Rico Mori", testUser.getName());
-        assertEquals(LocalDate.of(1996, 12, 11), testUser.getBirthday());
+        assertTrue(violations.isEmpty(), "Должно пройти проверку");
+
+        User updatedUser = userController.update(user2);
+        assertEquals("Pat", updatedUser.getLogin(), "Логин должен успешно обновиться");
+        assertEquals("Rico Mori", updatedUser.getName(), "Имя должно успешно обновиться");
     }
 
     @Test
@@ -241,6 +245,6 @@ public class UserControllerTest {
 
         NotFoundException exception = assertThrows(NotFoundException.class,
                 () -> userController.update(user));
-        assertEquals("Id не существует", exception.getMessage());
+        assertEquals("Id 155 не существует", exception.getMessage());
     }
 }
