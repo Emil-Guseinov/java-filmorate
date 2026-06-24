@@ -3,7 +3,6 @@ import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 import org.junit.jupiter.api.*;
-
 import ru.yandex.practicum.filmorate.controller.FilmController;
 import ru.yandex.practicum.filmorate.exception.ConditionNotMetException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
@@ -16,16 +15,10 @@ import static org.junit.jupiter.api.Assertions.*;
 import static ru.yandex.practicum.filmorate.model.Film.MAX_DESCRIPTION_LENGTH;
 
 
-
 public class FilmControllerTest {
     private static Validator validator;
     private static ValidatorFactory factory;
     private FilmController filmController;
-
-    @BeforeEach
-    void setUp() {
-        filmController = new FilmController();
-    }
 
     @BeforeAll
     static void initValidator() {
@@ -38,6 +31,11 @@ public class FilmControllerTest {
         if (factory != null) {
             factory.close();
         }
+    }
+
+    @BeforeEach
+    void setUp() {
+        filmController = new FilmController();
     }
 
     @Test
@@ -183,10 +181,10 @@ public class FilmControllerTest {
         film.setReleaseDate(LocalDate.of(1999, 5, 19));
         film.setDuration(-5);
 
-       Set<ConstraintViolation<Film>> violations = validator.validate(film);
+        Set<ConstraintViolation<Film>> violations = validator.validate(film);
 
-       assertFalse(violations.isEmpty());
-       String message = violations.iterator().next().getMessage();
+        assertFalse(violations.isEmpty());
+        String message = violations.iterator().next().getMessage();
         assertEquals("Продолжительность фильма должна быть положительной", message);
 
     }
