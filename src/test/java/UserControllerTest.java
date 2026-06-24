@@ -14,24 +14,26 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class UserControllerTest {
-    private UserController userController;
     private static Validator validator;
     private static ValidatorFactory factory;
+    private UserController userController;
 
-    @BeforeEach
-    void setUp() {
-        userController = new UserController();
-    }
     @BeforeAll
     static void initValidator() {
         factory = Validation.buildDefaultValidatorFactory();
         validator = factory.getValidator();
     }
+
     @AfterAll
     static void closeValidator() {
-       if (factory != null) {
-           factory.close();
-       }
+        if (factory != null) {
+            factory.close();
+        }
+    }
+
+    @BeforeEach
+    void setUp() {
+        userController = new UserController();
     }
 
     @Test
