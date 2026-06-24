@@ -26,11 +26,13 @@ public class FilmControllerTest {
     void setUp() {
         filmController = new FilmController();
     }
+
     @BeforeAll
     static void initValidator() {
         factory = Validation.buildDefaultValidatorFactory();
         validator = factory.getValidator();
     }
+
     @AfterAll
     static void closeValidator() {
         if (factory != null) {
@@ -50,7 +52,6 @@ public class FilmControllerTest {
         Set<ConstraintViolation<Film>> violations = validator.validate(film);
 
         assertTrue(violations.isEmpty(), "Валидный фильм должен проходить проверку без ошибок");
-
     }
 
     @Test
