@@ -63,7 +63,6 @@ public class FilmControllerTest {
         film.setReleaseDate(LocalDate.of(1999, 5, 19));
         film.setDuration(136);
 
-
         Set<ConstraintViolation<Film>> violations = validator.validate(film);
 
         assertFalse(violations.isEmpty());
@@ -130,7 +129,7 @@ public class FilmControllerTest {
     @DisplayName("Должен принять с описания фильма ровно 200 символов")
     void createFilmWithLength200() {
         Film film = new Film();
-        String maxDescription = "a".repeat(MAX_DESCRIPTION_LENGTH );
+        String maxDescription = "a".repeat(MAX_DESCRIPTION_LENGTH);
         film.setName("Звездные войны.Эпизод 1:Скрытая угроза");
         film.setDescription(maxDescription);
         film.setReleaseDate(LocalDate.of(1999, 5, 19));
