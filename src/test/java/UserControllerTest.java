@@ -3,20 +3,32 @@ import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 import org.junit.jupiter.api.*;
-import ru.yandex.practicum.filmorate.controller.UserController;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import ru.yandex.practicum.filmorate.exception.ConditionNotMetException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.UserService;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@SpringBootTest(classes = {
+        ru.yandex.practicum.filmorate.service.UserService.class,
+        ru.yandex.practicum.filmorate.storage.memory.InMemoryUserStorage.class,
+        ru.yandex.practicum.filmorate.FilmorateApplication.class
+})
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 public class UserControllerTest {
     private static Validator validator;
     private static ValidatorFactory factory;
-    private UserController userController;
+
+    @Autowired
+    private UserService userService;
 
     @BeforeAll
     static void initValidator() {
@@ -31,10 +43,8 @@ public class UserControllerTest {
         }
     }
 
-    @BeforeEach
-    void setUp() {
-        userController = new UserController();
-    }
+
+
 
     @Test
     @DisplayName("Должно пройти успешно при корректных данных")
@@ -76,7 +86,7 @@ public class UserControllerTest {
         user.setLogin("JAVA");
         user.setName("Джеймс Гослинг");
         user.setBirthday(LocalDate.of(1995, 5, 23));
-        userController.create(user);
+        userService.create(user);
 
         User user2 = new User();
         user2.setEmail("testUnit@yandex.ru");
@@ -85,7 +95,7 @@ public class UserControllerTest {
         user2.setBirthday(LocalDate.of(1990, 3, 20));
 
         ConditionNotMetException exception = assertThrows(ConditionNotMetException.class,
-                () -> userController.create(user2));
+                () -> userService.create(user2));
         assertEquals("Пользователь с таким email уже зарегистрирован", exception.getMessage());
 
     }
@@ -132,7 +142,7 @@ public class UserControllerTest {
         user.setLogin("JAVA");
         user.setName("Джеймс Гослинг");
         user.setBirthday(LocalDate.of(1995, 5, 23));
-        userController.create(user);
+        userService.create(user);
 
         User user2 = new User();
         user2.setEmail("testMax@yandex.ru");
@@ -141,7 +151,7 @@ public class UserControllerTest {
         user2.setBirthday(LocalDate.of(1996, 5, 23));
 
         ConditionNotMetException exception = assertThrows(ConditionNotMetException.class,
-                () -> userController.create(user2));
+                () -> userService.create(user2));
         assertEquals("Пользователь с таким логином уже зарегистрирован", exception.getMessage());
     }
 
@@ -154,7 +164,7 @@ public class UserControllerTest {
         user.setName(null);
         user.setBirthday(LocalDate.of(1995, 5, 23));
 
-        User testUser = userController.create(user);
+        User testUser = userService.create(user);
 
         assertEquals("JAVA", testUser.getName());
 
@@ -202,7 +212,7 @@ public class UserControllerTest {
         user.setLogin("JAVA");
         user.setName("Джеймс Гослинг");
         user.setBirthday(LocalDate.of(1995, 5, 23));
-        User user1 = userController.create(user);
+        User user1 = userService.create(user);
 
         User user2 = new User();
         user2.setId(user1.getId());
@@ -215,7 +225,7 @@ public class UserControllerTest {
 
         assertTrue(violations.isEmpty(), "Должно пройти проверку");
 
-        User updatedUser = userController.update(user2);
+        User updatedUser = userService.update(user2);
         assertEquals("Pat", updatedUser.getLogin(), "Логин должен успешно обновиться");
         assertEquals("Rico Mori", updatedUser.getName(), "Имя должно успешно обновиться");
     }
@@ -231,7 +241,7 @@ public class UserControllerTest {
         user.setBirthday(LocalDate.of(1995, 5, 23));
 
         ConditionNotMetException exception = assertThrows(ConditionNotMetException.class,
-                () -> userController.update(user));
+                () -> userService.update(user));
         assertEquals("Id должен быть указан!", exception.getMessage());
     }
 
@@ -246,7 +256,64 @@ public class UserControllerTest {
         user.setBirthday(LocalDate.of(1995, 5, 23));
 
         NotFoundException exception = assertThrows(NotFoundException.class,
-                () -> userController.update(user));
+                () -> userService.update(user));
         assertEquals("Id 155 не существует", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Добавление в друзья и получение списка друзей")
+    void addFriendAndGetFriendsList() {
+        User user1 = userService.create(createUserObject("one@mail.ru", "login1"));
+        User user2 = userService.create(createUserObject("two@mail.ru", "login2"));
+
+        userService.addFriend(user1.getId(), user2.getId());
+
+        List<User> friendsOfUser1 = userService.getFriends(user1.getId());
+        List<User> friendsOfUser2 = userService.getFriends(user2.getId());
+
+        assertEquals(1, friendsOfUser1.size(), "У первого пользователя должен быть 1 друг");
+        assertEquals(user2.getId(), friendsOfUser1.getFirst().getId(), "Другом должен быть пользователь 2");
+
+        assertEquals(1, friendsOfUser2.size(), "У второго пользователя тоже должен быть 1 друг");
+        assertEquals(user1.getId(), friendsOfUser2.getFirst().getId(), "Другом должен быть пользователь 1");
+    }
+
+    @Test
+    @DisplayName("Удаление из друзей")
+    void removeFriend() {
+        User user1 = userService.create(createUserObject("one@mail.ru", "login1"));
+        User user2 = userService.create(createUserObject("two@mail.ru", "login2"));
+
+        userService.addFriend(user1.getId(), user2.getId());
+
+        userService.removeFriendId(user1.getId(), user2.getId());
+
+        assertTrue(userService.getFriends(user1.getId()).isEmpty(), "Список друзей пользователя 1 должен стать пустым");
+        assertTrue(userService.getFriends(user2.getId()).isEmpty(), "Список друзей пользователя 2 должен стать пустым");
+    }
+
+    @Test
+    @DisplayName("Получение списка общих друзей")
+    void getCommonFriends() {
+        User user1 = userService.create(createUserObject("one@mail.ru", "login1"));
+        User user2 = userService.create(createUserObject("two@mail.ru", "login2"));
+        User commonFriend = userService.create(createUserObject("common@mail.ru", "common"));
+
+        userService.addFriend(user1.getId(), commonFriend.getId());
+        userService.addFriend(user2.getId(), commonFriend.getId());
+
+        List<User> commonFriends = userService.getOtherFriends(user1.getId(), user2.getId());
+
+        assertEquals(1, commonFriends.size(), "Должен быть ровно один общий друг");
+        assertEquals(commonFriend.getId(), commonFriends.getFirst().getId(), "Общим другом должен быть пользователь common");
+    }
+
+    private User createUserObject(String email, String login) {
+        User user = new User();
+        user.setEmail(email);
+        user.setLogin(login);
+        user.setName("Name " + login);
+        user.setBirthday(LocalDate.of(2000, 1, 1));
+        return user;
     }
 }
