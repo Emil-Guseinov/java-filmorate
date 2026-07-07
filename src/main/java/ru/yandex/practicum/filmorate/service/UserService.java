@@ -70,13 +70,13 @@ public class UserService {
     }
 
     public List<User> getOtherFriends(Long id, Long otherId) {
-        User user = findById(id);
-        User otherUser = findById(otherId);
 
-        return user.getFriends().stream()
-                .filter(friendId -> otherUser.getFriends().contains(friendId))
-                .map(this::findById)
-                .toList();
+        userStorage.findById(id)
+                .orElseThrow(() -> new NotFoundException("Пользователь с id " + id + " не найден"));
+        userStorage.findById(otherId)
+                .orElseThrow(() -> new NotFoundException("Пользователь с id " + otherId + " не найден"));
+
+        return userStorage.getCommonFriends(id, otherId);
     }
 
     public User create(User user) {
@@ -87,6 +87,43 @@ public class UserService {
 
     public User update(User user) {
 
-        return userStorage.update(user);
+        if (user.getId() == null) {
+            log.warn("Попытка обновления id null");
+            throw new ConditionNotMetException("Id должен быть указан!");
+
+        }
+        User oldUser = userStorage.findById(user.getId())
+                .orElseThrow(() -> {
+                    log.warn("id {} еще не зарегистрирован", user.getId());
+                    return new NotFoundException("Id " + user.getId() + " не существует");
+                });
+
+        String oldLogin = oldUser.getLogin().toLowerCase().trim();
+        String newLogin = user.getLogin().toLowerCase().trim();
+        if (!oldLogin.equals(newLogin)) {
+            if (userStorage.containsLogin(newLogin)) {
+                log.warn("Указан уже использующийся логин {}", user.getLogin());
+                throw new ConditionNotMetException("Логин занят");
+            }
+        }
+
+        String oldEmail = oldUser.getEmail().toLowerCase().trim();
+        String newEmail = user.getEmail().toLowerCase().trim();
+        if (!oldEmail.equals(newEmail)) {
+            if (userStorage.containsEmail(newEmail)) {
+                log.warn("Попытка изменить email на уже существующий: {}", user.getEmail());
+                throw new ConditionNotMetException("Этот email уже занят другим пользователем");
+            }
+        }
+
+        if (user.getName() == null || user.getName().isBlank()) {
+            user.setName(user.getLogin());
+        }
+        User updatedUser = userStorage.update(user);
+
+        log.info("Пользователь обновлен name:{} ,id {} ,email:{}", updatedUser.getName(), updatedUser.getId(), updatedUser.getEmail());
+
+        return updatedUser;
+
     }
 }

@@ -15,4 +15,5 @@ public interface FilmStorage {
 
     Film update(Film film);
 
+    boolean containsKey(String key);
 }

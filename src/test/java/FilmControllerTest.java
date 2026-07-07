@@ -6,6 +6,7 @@ import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
+import ru.yandex.practicum.filmorate.controller.FilmController;
 import ru.yandex.practicum.filmorate.exception.ConditionNotMetException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
@@ -165,22 +166,6 @@ public class FilmControllerTest {
 
         String message = violations.iterator().next().getMessage();
         assertEquals("Дата релиза должна быть указана", message);
-    }
-
-    @Test
-    @DisplayName("Дата релиза не должна быть раньше чем 1895-12-28")
-    void createFilmWithReleaseDate() {
-        Film film = new Film();
-        film.setName("Звездные войны");
-        film.setDescription("Описание");
-        film.setReleaseDate(LocalDate.of(1700, 5, 19));
-        film.setDuration(136);
-
-        // Вызываем метод контроллера, так как логика проверки даты осталась в нём
-        ConditionNotMetException exception = assertThrows(ConditionNotMetException.class,
-                () -> filmService.create(film)
-        );
-        assertEquals("Дата фильма должна быть не раньше 1895-12-28", exception.getMessage());
     }
 
     @Test

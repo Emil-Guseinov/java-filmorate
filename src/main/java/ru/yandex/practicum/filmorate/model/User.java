@@ -1,6 +1,7 @@
 package ru.yandex.practicum.filmorate.model;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
@@ -25,5 +26,6 @@ public class User {
     @PastOrPresent(message = "Дата рождения не должна быть в будущем")
     private LocalDate birthday;
 
+    @JsonIgnore
     private Set<@Positive Long> friends = new HashSet<>();
 }

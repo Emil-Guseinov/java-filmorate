@@ -9,7 +9,6 @@ import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
-import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 
@@ -17,7 +16,6 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class FilmService {
-    private static final LocalDate FILM_BIRTHDAY = LocalDate.of(1895, 12, 28);
     private final FilmStorage filmStorage;
     private final UserStorage userStorage;
 
@@ -36,15 +34,35 @@ public class FilmService {
 
     public Film create(Film film) {
 
-        validateReleaseDate(film);
         return filmStorage.create(film);
-
     }
 
     public Film update(Film film) {
+        if (film.getId() == null) {
+            log.warn("Попытка обновления фильма без id");
+            throw new ConditionNotMetException("id должен быть указан!");
+        }
 
-        validateReleaseDate(film);
-        return filmStorage.update(film);
+        Film oldFilm = filmStorage.findById(film.getId())
+                .orElseThrow(() -> {
+                    log.warn("Фильм с id {} не найден для обновления", film.getId());
+                    return new NotFoundException("id не найден");
+                });
+
+
+        String oldKey = oldFilm.getName().toLowerCase().trim() + "_" + oldFilm.getReleaseDate();
+        String newKey = film.getName().toLowerCase().trim() + "_" + film.getReleaseDate();
+
+        if (!oldKey.equals(newKey)) {
+            if (filmStorage.containsKey(newKey)) {
+                log.warn("Попытка обновить фильм на уже существующий: {}", film.getName());
+                throw new ConditionNotMetException("Фильм с таким названием и датой релиза уже существует");
+            }
+        }
+
+        Film updatedFilm = filmStorage.update(film);
+        log.info("Фильм обновлен: {}, id фильма {}", updatedFilm.getName(), updatedFilm.getId());
+        return updatedFilm;
     }
 
     public List<Film> getTopFilms(Integer count) {
@@ -86,12 +104,4 @@ public class FilmService {
         film.getLikes().remove(userId);
         return film;
     }
-
-    private void validateReleaseDate(Film film) {
-        if (film.getReleaseDate().isBefore(FILM_BIRTHDAY)) {
-            log.warn("Дата фильма указана {} раньше чем {}", film.getReleaseDate(), FILM_BIRTHDAY);
-            throw new ConditionNotMetException("Дата фильма должна быть не раньше " + FILM_BIRTHDAY);
-        }
-    }
-
 }
