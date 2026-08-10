@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.controller;
 
+import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -40,18 +41,38 @@ public class ErrorHandler {
     @ExceptionHandler(NotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public Map<String, String> handleNotFound(final NotFoundException e) {
-        return Map.of("error ", e.getMessage());
+        return Map.of("error", e.getMessage());
     }
 
     @ExceptionHandler(DelicateDateException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleDelicateDateNotMet(final DelicateDateException e) {
-        return Map.of("error ", e.getMessage());
+        return Map.of("error", e.getMessage());
     }
 
     @ExceptionHandler(ConditionNotMetException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleConditionNotMet(final ConditionNotMetException e) {
-        return Map.of("error ", e.getMessage());
+        return Map.of("error", e.getMessage());
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> handleConstraintViolation(final ConstraintViolationException e) {
+        return Map.of("error", e.getMessage());
+    }
+
+    @ExceptionHandler(jakarta.validation.ValidationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> handleValidationException(final jakarta.validation.ValidationException e) {
+        log.error("Ошибка валидации: {}", e.getMessage());
+        return Map.of("error", e.getMessage());
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public Map<String, String> handleThrowable(final Throwable e) {
+        log.error("Произошла непредвиденная ошибка на сервере", e);
+        return Map.of("error", "Произошла непредвиденная ошибка на сервере.");
     }
 }
