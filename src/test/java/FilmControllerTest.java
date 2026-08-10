@@ -6,6 +6,7 @@ import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.TestPropertySource;
 import ru.yandex.practicum.filmorate.exception.ConditionNotMetException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
@@ -26,6 +27,7 @@ import static ru.yandex.practicum.filmorate.model.Film.MAX_DESCRIPTION_LENGTH;
         ru.yandex.practicum.filmorate.FilmorateApplication.class
 })
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
+@TestPropertySource(properties = "spring.datasource.url=jdbc:h2:mem:filmorate-test")
 public class FilmControllerTest {
     private static Validator validator;
     private static ValidatorFactory factory;

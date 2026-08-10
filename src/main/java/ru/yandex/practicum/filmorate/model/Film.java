@@ -9,7 +9,9 @@ import lombok.Data;
 import ru.yandex.practicum.filmorate.validator.MinimumDate;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 
@@ -17,10 +19,10 @@ import java.util.Set;
 public class Film {
 
     public static final int MAX_DESCRIPTION_LENGTH = 200;
-
     @JsonIgnore
     private final Set<Long> likes = new HashSet<>();
-
+    private Mpa mpa;
+    private List<Genre> genres = new ArrayList<>();
     private Long id;
 
     @NotBlank(message = "Название фильма не должно быть пустым или содержать пробелы")
@@ -36,6 +38,5 @@ public class Film {
 
     @Positive(message = "Продолжительность фильма должна быть положительной")
     private int duration;
-
 
 }

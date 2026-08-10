@@ -21,88 +21,93 @@ public class InMemoryUserStorage implements UserStorage {
 
     @Override
     public Optional<User> findById(Long id) {
-
         return Optional.ofNullable(users.get(id));
     }
 
     @Override
     public User create(User user) {
-
-        String loginKey = user.getLogin().toLowerCase().trim();
+        String loginKey = normalize(user.getLogin());
         if (usersLogin.contains(loginKey)) {
             throw new ConditionNotMetException("Пользователь с таким логином уже зарегистрирован");
         }
-
-        String emailKey = user.getEmail().toLowerCase().trim();
+        String emailKey = normalize(user.getEmail());
         if (usersEmail.contains(emailKey)) {
             throw new ConditionNotMetException("Пользователь с таким email уже зарегистрирован");
         }
-        if (user.getName() == null || user.getName().isBlank()) {
-            user.setName(user.getLogin());
-        }
-
         usersLogin.add(loginKey);
         usersEmail.add(emailKey);
         user.setId(getNextId());
         users.put(user.getId(), user);
-
         return user;
     }
 
     @Override
     public User update(User user) {
-
         User oldUser = users.get(user.getId());
-
-        String oldLogin = oldUser.getLogin().toLowerCase().trim();
-        String newLogin = user.getLogin().toLowerCase().trim();
-        if (!oldLogin.equals(newLogin)) {
-            usersLogin.remove(oldLogin);
-            usersLogin.add(newLogin);
+        if (oldUser != null) {
+            usersLogin.remove(normalize(oldUser.getLogin()));
+            usersEmail.remove(normalize(oldUser.getEmail()));
         }
-
-        String oldEmail = oldUser.getEmail().toLowerCase().trim();
-        String newEmail = user.getEmail().toLowerCase().trim();
-        if (!oldEmail.equals(newEmail)) {
-            usersEmail.remove(oldEmail);
-            usersEmail.add(newEmail);
-        }
-
+        usersLogin.add(normalize(user.getLogin()));
+        usersEmail.add(normalize(user.getEmail()));
         users.put(user.getId(), user);
         return user;
     }
 
     @Override
     public boolean containsLogin(String login) {
-        return usersLogin.contains(login.toLowerCase().trim());
+        return usersLogin.contains(normalize(login));
     }
 
     @Override
     public boolean containsEmail(String email) {
-        return usersEmail.contains(email.toLowerCase().trim());
+        return usersEmail.contains(normalize(email));
+    }
+
+    @Override
+    public void addFriend(Long id, Long friendId) {
+        User user = users.get(id);
+        if (user != null) {
+            user.getFriends().add(friendId);
+        }
+    }
+
+    @Override
+    public void removeFriend(Long id, Long friendId) {
+        User user = users.get(id);
+        if (user != null) {
+            user.getFriends().remove(friendId);
+        }
+    }
+
+    @Override
+    public List<User> getFriends(Long id) {
+        User user = users.get(id);
+        if (user == null) {
+            return List.of();
+        }
+        return user.getFriends().stream().map(users::get).filter(java.util.Objects::nonNull).toList();
     }
 
     @Override
     public List<User> getCommonFriends(Long id, Long otherId) {
         User user = users.get(id);
         User otherUser = users.get(otherId);
-
         if (user == null || otherUser == null) {
             return List.of();
         }
-
         return user.getFriends().stream()
-                .filter(friendId -> otherUser.getFriends().contains(friendId))
-                .map(users::get) //
+                .filter(otherUser.getFriends()::contains)
+                .map(users::get)
+                .filter(java.util.Objects::nonNull)
                 .toList();
     }
 
-    private Long getNextId() {
-        long currentIdMax = users.keySet()
-                .stream()
-                .mapToLong(id -> id)
-                .max()
-                .orElse(0);
-        return currentIdMax + 1;
+    private String normalize(String value) {
+        return value.toLowerCase().trim();
+    }
+
+    private long getNextId() {
+        return users.keySet().stream().mapToLong(Long::longValue).max().orElse(0) + 1;
     }
 }
