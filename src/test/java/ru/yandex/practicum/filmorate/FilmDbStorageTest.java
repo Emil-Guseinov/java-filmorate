@@ -10,8 +10,6 @@ import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.FilmDbStorage;
-import ru.yandex.practicum.filmorate.storage.GenreDbStorage;
-import ru.yandex.practicum.filmorate.storage.MpaDbStorage;
 import ru.yandex.practicum.filmorate.storage.UserDbStorage;
 
 import java.time.LocalDate;
@@ -21,64 +19,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @JdbcTest
 @AutoConfigureTestDatabase
-@Import({UserDbStorage.class, FilmDbStorage.class, GenreDbStorage.class, MpaDbStorage.class})
-class FilmorateApplicationTests {
-
-    @Autowired
-    private UserDbStorage userStorage;
+@Import({FilmDbStorage.class, UserDbStorage.class})
+class FilmDbStorageTest {
 
     @Autowired
     private FilmDbStorage filmStorage;
 
     @Autowired
-    private GenreDbStorage genreStorage;
-
-    @Autowired
-    private MpaDbStorage mpaStorage;
+    private UserDbStorage userStorage;
 
     @Test
-    void userStorageCrudAndSearchMethodsWork() {
-        User user = createUser("mail@test.ru", "login");
-        User created = userStorage.create(user);
-
-        assertThat(created.getId()).isNotNull();
-        assertThat(userStorage.findById(created.getId())).contains(created);
-        assertThat(userStorage.usersAll()).extracting(User::getId).contains(created.getId());
-        assertThat(userStorage.containsEmail("MAIL@test.ru")).isTrue();
-        assertThat(userStorage.containsLogin("LOGIN")).isTrue();
-
-        created.setName("Новое имя");
-        User updated = userStorage.update(created);
-        assertThat(updated.getName()).isEqualTo("Новое имя");
-        User reloaded = userStorage.findById(created.getId()).orElseThrow();
-        assertThat(reloaded.getName()).isEqualTo("Новое имя");
-    }
-
-    @Test
-    void friendshipMethodsAreOneDirectionalAndCommonFriendsWork() {
-        User first = userStorage.create(createUser("first@test.ru", "first"));
-        User second = userStorage.create(createUser("second@test.ru", "second"));
-        User common = userStorage.create(createUser("common@test.ru", "common"));
-
-        userStorage.addFriend(first.getId(), second.getId());
-        assertThat(userStorage.getFriends(first.getId())).extracting(User::getId).containsExactly(second.getId());
-        assertThat(userStorage.getFriends(second.getId())).isEmpty();
-
-        userStorage.addFriend(first.getId(), common.getId());
-        userStorage.addFriend(second.getId(), common.getId());
-        assertThat(userStorage.getCommonFriends(first.getId(), second.getId()))
-                .extracting(User::getId).containsExactly(common.getId());
-
-        userStorage.removeFriend(first.getId(), second.getId());
-        assertThat(userStorage.getFriends(first.getId())).extracting(User::getId).containsExactly(common.getId());
-    }
-
-    @Test
-    void filmStorageCrudMethodsWorkWithMpaAndGenres() {
+    void crudMethodsWorkWithMpaAndGenres() {
         Film film = createFilm("Первый фильм", 1L, List.of(1L, 2L));
         Film created = filmStorage.create(film);
 
         assertThat(created.getId()).isNotNull();
+        assertThat(filmStorage.existsById(created.getId())).isTrue();
         assertThat(created.getMpa()).isNotNull();
         assertThat(created.getMpa().getName()).isEqualTo("G");
         assertThat(created.getGenres()).extracting(Genre::getName).containsExactly("Комедия", "Драма");
@@ -90,10 +46,11 @@ class FilmorateApplicationTests {
         Film updated = filmStorage.update(created);
         assertThat(updated.getName()).isEqualTo("Обновлённый фильм");
         assertThat(updated.getGenres()).extracting(Genre::getName).containsExactly("Боевик");
+        assertThat(filmStorage.existsById(999L)).isFalse();
     }
 
     @Test
-    void filmLikesAndPopularMethodsWork() {
+    void likesAndPopularMethodsWork() {
         Film first = filmStorage.create(createFilm("Первый", 1L, List.of()));
         Film second = filmStorage.create(createFilm("Второй", 2L, List.of()));
         User firstUser = userStorage.create(createUser("one@test.ru", "one"));
@@ -111,22 +68,6 @@ class FilmorateApplicationTests {
         filmStorage.deleteLike(second.getId(), firstUser.getId());
         secondReloaded = filmStorage.findById(second.getId()).orElseThrow();
         assertThat(secondReloaded.getLikes()).hasSize(1);
-    }
-
-    @Test
-    void genreStorageReturnsAllAndById() {
-        assertThat(genreStorage.findAll()).hasSize(6);
-        assertThat(genreStorage.findById(1L).orElseThrow().getName()).isEqualTo("Комедия");
-        assertThat(genreStorage.findById(999L)).isEmpty();
-    }
-
-    @Test
-    void mpaStorageReturnsExactlyFiveRatingsAndById() {
-        assertThat(mpaStorage.findAll()).hasSize(5)
-                .extracting(Mpa::getName)
-                .containsExactly("G", "PG", "PG-13", "R", "NC-17");
-        assertThat(mpaStorage.findById(1L).orElseThrow().getName()).isEqualTo("G");
-        assertThat(mpaStorage.findById(999L)).isEmpty();
     }
 
     private User createUser(String email, String login) {

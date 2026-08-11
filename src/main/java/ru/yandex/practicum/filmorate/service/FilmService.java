@@ -13,7 +13,9 @@ import ru.yandex.practicum.filmorate.storage.MpaDbStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -56,30 +58,13 @@ public class FilmService {
             log.warn("Попытка обновления фильма без id");
             throw new ConditionNotMetException("id должен быть указан!");
         }
-        if (filmStorage.findById(film.getId()).isEmpty()) {
+        if (!filmStorage.existsById(film.getId())) {
             throw new NotFoundException("id не найден");
         }
         validateReferences(film);
         Film updatedFilm = filmStorage.update(film);
         log.info("Фильм обновлен: {}, id фильма {}", updatedFilm.getName(), updatedFilm.getId());
         return updatedFilm;
-    }
-
-    private void validateReferences(Film film) {
-        if (film.getMpa() != null && film.getMpa().getId() != null
-                && mpaStorage.findById(film.getMpa().getId()).isEmpty()) {
-            throw new NotFoundException("Рейтинг MPA с id " + film.getMpa().getId() + " не найден");
-        }
-
-        if (film.getGenres() == null) {
-            return;
-        }
-
-        for (Genre genre : film.getGenres()) {
-            if (genre != null && genre.getId() != null && genreStorage.findById(genre.getId()).isEmpty()) {
-                throw new NotFoundException("Жанр с id " + genre.getId() + " не найден");
-            }
-        }
     }
 
     public List<Film> getTopFilms(Integer count) {
@@ -89,21 +74,47 @@ public class FilmService {
         return filmStorage.getTopFilms(count);
     }
 
-    public Film addLike(Long filmId, Long userId) {
-        Film film = findById(filmId);
-        if (userStorage.findById(userId).isEmpty()) {
-            throw new NotFoundException("Пользователь с id " + userId + " не найден");
-        }
+    public void addLike(Long filmId, Long userId) {
+        ensureFilmAndUserExist(filmId, userId);
         filmStorage.addLike(filmId, userId);
-        return findById(filmId);
     }
 
-    public Film deleteLike(Long filmId, Long userId) {
-        Film film = findById(filmId);
+    public void deleteLike(Long filmId, Long userId) {
+        ensureFilmAndUserExist(filmId, userId);
+        filmStorage.deleteLike(filmId, userId);
+    }
+
+    private void ensureFilmAndUserExist(Long filmId, Long userId) {
+        if (!filmStorage.existsById(filmId)) {
+            throw new NotFoundException("id фильма " + filmId + " не найден");
+        }
         if (userStorage.findById(userId).isEmpty()) {
             throw new NotFoundException("Пользователь с id " + userId + " не найден");
         }
-        filmStorage.deleteLike(filmId, userId);
-        return findById(filmId);
+    }
+
+    private void validateReferences(Film film) {
+        if (film.getMpa() != null && film.getMpa().getId() != null
+                && mpaStorage.findById(film.getMpa().getId()).isEmpty()) {
+            throw new NotFoundException("Рейтинг MPA с id " + film.getMpa().getId() + " не найден");
+        }
+
+        if (film.getGenres() == null || film.getGenres().isEmpty()) {
+            return;
+        }
+
+        Set<Long> genreIds = new LinkedHashSet<>();
+        for (Genre genre : film.getGenres()) {
+            if (genre != null && genre.getId() != null) {
+                genreIds.add(genre.getId());
+            }
+        }
+
+        Set<Long> existingIds = genreStorage.findExistingIds(genreIds);
+        for (Long genreId : genreIds) {
+            if (!existingIds.contains(genreId)) {
+                throw new NotFoundException("Жанр с id " + genreId + " не найден");
+            }
+        }
     }
 }

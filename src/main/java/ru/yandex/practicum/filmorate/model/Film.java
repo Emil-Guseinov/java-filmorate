@@ -14,15 +14,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-
 @Data
 public class Film {
 
     public static final int MAX_DESCRIPTION_LENGTH = 200;
-    @JsonIgnore
-    private final Set<Long> likes = new HashSet<>();
-    private Mpa mpa;
-    private List<Genre> genres = new ArrayList<>();
+
     private Long id;
 
     @NotBlank(message = "Название фильма не должно быть пустым или содержать пробелы")
@@ -39,4 +35,9 @@ public class Film {
     @Positive(message = "Продолжительность фильма должна быть положительной")
     private int duration;
 
+    private Mpa mpa;
+    private List<Genre> genres = new ArrayList<>();
+
+    @JsonIgnore
+    private final Set<Long> likes = new HashSet<>();
 }

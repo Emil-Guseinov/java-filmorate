@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.controller;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
+import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.model.Film;
@@ -13,12 +14,9 @@ import java.util.List;
 @Validated
 @RestController
 @RequestMapping("/films")
+@RequiredArgsConstructor
 public class FilmController {
     private final FilmService filmService;
-
-    FilmController(FilmService filmService) {
-        this.filmService = filmService;
-    }
 
     @GetMapping("/popular")
     public List<Film> getTopFilms(@RequestParam(defaultValue = "10") @Min(1) Integer count) {
@@ -27,7 +25,6 @@ public class FilmController {
 
     @GetMapping("/{id}")
     public Film getFilmById(@PathVariable Long id) {
-
         return filmService.findById(id);
     }
 
@@ -43,17 +40,16 @@ public class FilmController {
 
     @PutMapping
     public Film update(@Valid @RequestBody Film film) {
-
         return filmService.update(film);
     }
 
-    @PutMapping("{id}/like/{userId}")
-    public Film setLike(@PathVariable Long id, @PathVariable Long userId) {
-        return filmService.addLike(id, userId);
+    @PutMapping("/{id}/like/{userId}")
+    public void setLike(@PathVariable Long id, @PathVariable Long userId) {
+        filmService.addLike(id, userId);
     }
 
     @DeleteMapping("/{id}/like/{userId}")
-    public Film deleteLike(@PathVariable Long id, @PathVariable Long userId) {
-        return filmService.deleteLike(id, userId);
+    public void deleteLike(@PathVariable Long id, @PathVariable Long userId) {
+        filmService.deleteLike(id, userId);
     }
 }

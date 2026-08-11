@@ -12,6 +12,8 @@ public interface FilmStorage {
 
     Optional<Film> findById(Long id);
 
+    boolean existsById(Long id);
+
     Film create(Film film);
 
     Film update(Film film);
