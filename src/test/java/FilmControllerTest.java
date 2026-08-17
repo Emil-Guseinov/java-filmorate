@@ -6,9 +6,12 @@ import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.TestPropertySource;
 import ru.yandex.practicum.filmorate.exception.ConditionNotMetException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.FilmService;
 import ru.yandex.practicum.filmorate.service.UserService;
@@ -26,6 +29,7 @@ import static ru.yandex.practicum.filmorate.model.Film.MAX_DESCRIPTION_LENGTH;
         ru.yandex.practicum.filmorate.FilmorateApplication.class
 })
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
+@TestPropertySource(properties = "spring.datasource.url=jdbc:h2:mem:filmorate-test")
 public class FilmControllerTest {
     private static Validator validator;
     private static ValidatorFactory factory;
@@ -229,6 +233,28 @@ public class FilmControllerTest {
         assertEquals("Звездные войны.Эпизод 2:Атака клонов", testFilm.getName());
         assertEquals(LocalDate.of(2002, 5, 16), testFilm.getReleaseDate());
         assertEquals(142, testFilm.getDuration());
+    }
+
+    @Test
+    @DisplayName("Создание фильма с несуществующим MPA должно вернуть NotFoundException")
+    void shouldRejectFilmWithUnknownMpa() {
+        Film film = createFilmObject("Фильм с неверным MPA", LocalDate.of(2000, 1, 1));
+        Mpa mpa = new Mpa();
+        mpa.setId(999L);
+        film.setMpa(mpa);
+
+        assertThrows(NotFoundException.class, () -> filmService.create(film));
+    }
+
+    @Test
+    @DisplayName("Создание фильма с несуществующим жанром должно вернуть NotFoundException")
+    void shouldRejectFilmWithUnknownGenre() {
+        Film film = createFilmObject("Фильм с неверным жанром", LocalDate.of(2000, 1, 1));
+        Genre genre = new Genre();
+        genre.setId(999L);
+        film.setGenres(List.of(genre));
+
+        assertThrows(NotFoundException.class, () -> filmService.create(film));
     }
 
     @Test

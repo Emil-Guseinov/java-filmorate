@@ -6,7 +6,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-
 public interface UserStorage {
 
     Collection<User> usersAll();
@@ -21,6 +20,11 @@ public interface UserStorage {
 
     boolean containsEmail(String email);
 
-    List<User> getCommonFriends(Long id, Long otherId);
+    void addFriend(Long id, Long friendId);
 
+    void removeFriend(Long id, Long friendId);
+
+    List<User> getFriends(Long id);
+
+    List<User> getCommonFriends(Long id, Long otherId);
 }

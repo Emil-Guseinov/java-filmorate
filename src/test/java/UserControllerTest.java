@@ -6,6 +6,7 @@ import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.TestPropertySource;
 import ru.yandex.practicum.filmorate.exception.ConditionNotMetException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
@@ -23,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
         ru.yandex.practicum.filmorate.FilmorateApplication.class
 })
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
+@TestPropertySource(properties = "spring.datasource.url=jdbc:h2:mem:filmorate-test")
 public class UserControllerTest {
     private static Validator validator;
     private static ValidatorFactory factory;
@@ -274,8 +276,7 @@ public class UserControllerTest {
         assertEquals(1, friendsOfUser1.size(), "У первого пользователя должен быть 1 друг");
         assertEquals(user2.getId(), friendsOfUser1.getFirst().getId(), "Другом должен быть пользователь 2");
 
-        assertEquals(1, friendsOfUser2.size(), "У второго пользователя тоже должен быть 1 друг");
-        assertEquals(user1.getId(), friendsOfUser2.getFirst().getId(), "Другом должен быть пользователь 1");
+        assertTrue(friendsOfUser2.isEmpty(), "Дружба односторонняя: у второго пользователя список должен быть пустым");
     }
 
     @Test

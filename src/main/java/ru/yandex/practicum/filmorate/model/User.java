@@ -20,6 +20,7 @@ public class User {
     private String email;
 
     @NotBlank(message = "Логин не должен быть пустым")
+    @Pattern(regexp = "\\S+", message = "Логин не должен содержать пробелы")
     private String login;
 
     @NotNull(message = "Дата рождения должна быть указана")
